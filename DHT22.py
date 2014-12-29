@@ -4,12 +4,10 @@ from pyb import ExtInt
 
 # We need to use global properties here as any allocation of a memory (aka declaration of a variable)
 # during the read cycle causes non-acceptable delay and we are loosing data than
-nc = None
-gnd = None
-vcc = None
 data = None
 timer = None
 micros = None
+dhttype = 0  #0=DHT11 1=DHT21/DHT22
 
 FALL_EDGES = 42 # we have 42 falling edges during data receive
 
@@ -25,28 +23,17 @@ def edge(line):
     if index < (FALL_EDGES - 1): # Avoid overflow of the buffer in case of any noise on the line
         index += 1
 
-def init(timer_id = 2, nc_pin = 'Y3', gnd_pin = 'Y4', vcc_pin = 'Y1', data_pin = 'Y2'):
-    global nc
-    global gnd
-    global vcc
+def init(timer_id = 2, data_pin = 'Y2', the_dhttype='DHT22'):
     global data
     global micros
     global timer
-    # Leave the pin unconnected
-    if nc_pin is not None:
-        nc = Pin(nc_pin)
-        nc.init(Pin.OUT_OD)
-        nc.high()
-    # Make the pin work as GND
-    if gnd_pin is not None:
-        gnd = Pin(gnd_pin)
-        gnd.init(Pin.OUT_PP)
-        gnd.low()
-    # Make the pin work as power supply
-    if vcc_pin is not None:
-        vcc = Pin(vcc_pin)
-        vcc.init(Pin.OUT_PP)
-        vcc.high()
+    global dhttype
+    
+	if(the_dhttype=='DHT11'):
+		dhttype = 0
+	else:
+		dhttype = 1
+    
     # Configure the pid for data communication
     data = Pin(data_pin)
     # Save the ID of the timer we are going to use
@@ -59,12 +46,8 @@ def init(timer_id = 2, nc_pin = 'Y3', gnd_pin = 'Y4', vcc_pin = 'Y1', data_pin =
 
 # Start signal
 def do_measurement():
-    global nc
-    global gnd
-    global vcc
     global data
     global micros
-    global timer
     global index
     # Send the START signal
     data.init(Pin.OUT_PP)
@@ -84,7 +67,8 @@ def do_measurement():
 
 # Parse the data read from the sensor
 def process_data():
-    global times
+    global dhttype
+	global times
     i = 2 # We ignore the first two falling edges as it is a respomse on the start signal
     result_i = 0
     result = list([0, 0, 0, 0, 0])
@@ -96,10 +80,17 @@ def process_data():
             result_i += 1
         i += 1
     [int_rh, dec_rh, int_t, dec_t, csum] = result
-    humidity = ((int_rh * 256) + dec_rh)/10
-    temperature = (((int_t & 0x7F) * 256) + dec_t)/10
-    if (int_t & 0x80) > 0:
-        temperature *= -1
+
+	if dhttype==0:		#dht11
+		humidity = int_rh 		#dht11 20% ~ 90%
+		temperature = int_t 	#dht11 0..50°C
+	else:			#dht21,dht22
+		humidity = ((int_rh * 256) + dec_rh)/10 
+		temperature = (((int_t & 0x7F) * 256) + dec_t)/10
+		if (int_t & 0x80) > 0:
+			temperature *= -1
+ 
+        
     comp_sum = int_rh + dec_rh + int_t + dec_t
     if (comp_sum & 0xFF) != csum:
         raise ValueError('Checksum does not match')
@@ -111,3 +102,7 @@ def measure():
         raise ValueError('Data transfer failed: %s falling edges only' % str(index))
     return process_data()
 
+#using:
+#import DHT22
+#DHT22.init()
+#DHT22.measure()
