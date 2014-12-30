@@ -49,3 +49,40 @@ The simplest installation way is to follow these steps (Linux):
 5. Restart your microPython board
 
 
+uPython-DHT
+===========
+universal library for DHT11, DHT21 and DHT22
+
+Installation
+------------
+There are one files:
+* dht.py - the module implementing communication with the sensor
+copy on the uPython.
+
+Hardware
+--------
+```
+Sensor pin | board pin
+-----------+----------
+    Pin1 VDD    |    3.3V
+    Pin2 DTA    |    Y9 (or other Data-Pin)
+    Pin3 NC     |    not conect
+    Pin4 GND    |    GND
+```
+
+usage
+-----
+on the console (Putty):
+import dht
+dht.init()
+#default timer_id = 2, data_pin = 'Y9', the_dhttype='DHT11'
+
+dht.measure()  
+#give the (humidity, temperature)
+
+dht.hum()  
+#give the humidity
+
+dht temp() 
+#give the temperature
+
