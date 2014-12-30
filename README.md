@@ -73,16 +73,21 @@ Pin4 GND   | GND
 usage
 -----
 on the console (Putty):
+```
 import dht
 dht.init()
+```
 default-> timer_id = 2, data_pin = 'Y9', the_dhttype='DHT11'
-
+```
 dht.measure()  
+```
 give the (humidity, temperature)
-
+```
 dht.hum()  
+```
 give the humidity
-
-dht temp() 
+```
+dht.temp() 
+```
 give the temperature
 
