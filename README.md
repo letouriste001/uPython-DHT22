@@ -64,10 +64,10 @@ Hardware
 ```
 Sensor pin | board pin
 -----------+----------
-    Pin1 VDD    |    3.3V
-    Pin2 DTA    |    Y9 (or other Data-Pin)
-    Pin3 NC     |    not conect
-    Pin4 GND    |    GND
+Pin1 VDD   | 3.3V
+Pin2 DTA   | Y9 (or other Data-Pin)
+Pin3 NC    | not conect
+Pin4 GND   | GND
 ```
 
 usage
@@ -75,14 +75,14 @@ usage
 on the console (Putty):
 import dht
 dht.init()
-#default timer_id = 2, data_pin = 'Y9', the_dhttype='DHT11'
+default-> timer_id = 2, data_pin = 'Y9', the_dhttype='DHT11'
 
 dht.measure()  
-#give the (humidity, temperature)
+give the (humidity, temperature)
 
 dht.hum()  
-#give the humidity
+give the humidity
 
 dht temp() 
-#give the temperature
+give the temperature
 
