@@ -16,19 +16,15 @@ The wiring:
 ```
 Sensor pin | board pin
 -----------+----------
-    VDD    |    Y1
+    VDD    |    3.3v
     DTA    |    Y2
-    NC     |    Y3
-    GND    |    Y4
+    GND    |    GND
 ```
-
-You can check photos, how it is plugged in at [this page](https://plus.google.com/photos/107569319719026103290/albums/6045166919384621489?authkey=CPaD1-25hPrx5AE).
 
 Installation
 ------------
 There are two files:
-* DHT22.py - the module implementing communication with the sensor
-* main.py  - a sample file how to use the module (to use it you will need LCD panel installed)
+* DHTSeries.py - the module implementing communication with the sensor
 
 The simplest installation way is to follow these steps (Linux):
 
@@ -38,56 +34,13 @@ The simplest installation way is to follow these steps (Linux):
   mkdir ~/tmp
   sudo mount /dev/sdb1 ~/tmp
   ```
-3. copy DHT22.py and main.py files to the board
+3. copy DHTSeries.py and main.py files to the board
   ```
-  sudo cp DHT22.py main.py ~/tmp
+  sudo cp DHTSeries.py main.py ~/tmp
   ```
 4. Unmount the device
   ```
   sudo umount ~/tmp
   ```
 5. Restart your microPython board
-
-
-uPython-DHT
-===========
-universal library for DHT11, DHT21 and DHT22
-
-Installation
-------------
-There are one files:
-* dht.py - the module implementing communication with the sensor
-copy on the uPython.
-
-Hardware
---------
-```
-Sensor pin | board pin
------------+----------
-Pin1 VDD   | 3.3V
-Pin2 DTA   | Y9 (or other Data-Pin)
-Pin3 NC    | not conect
-Pin4 GND   | GND
-```
-
-usage
------
-on the console (Putty):
-```
-import dht
-dht.init()
-```
-default-> timer_id = 2, data_pin = 'Y9', the_dhttype='DHT11'
-```
-dht.measure()  
-```
-give the (humidity, temperature)
-```
-dht.hum()  
-```
-give the humidity
-```
-dht.temp() 
-```
-give the temperature
 

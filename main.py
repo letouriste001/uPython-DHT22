@@ -1,24 +1,13 @@
-import DHT22
 import pyb
+import DHTSeries as AM2302
 
-def measure(led, lcd):
-    try:
-        (hum, tem) = DHT22.measure()
-        if ((hum == 0) and (tem == 0)) or (hum > 100):
-            raise ValueError('Invalid data received from sensor')
-        lcd.write('\nHumidity: %s%%\n    Temp: %sC\n\n' % (hum, tem)) 
-        led.off()
-    except Exception as e:
-        lcd.write(str(e) + '\n')
-        led.on()
 
-DHT22.init()
-lcd = pyb.LCD('X')
-lcd.light(True)
-led_red = pyb.LED(1) # 1 = Red
+print("start program")
+
+AM2302.init()
+pyb.delay(3000)  # Time for stabilize the sensors
 
 while True:
-    measure(led_red, lcd)
-    pyb.delay(3000)
-    
-
+    (hum, tem) = AM2302.measure()
+    print("humidité : " + str(hum) + " temperature : " + str(tem))
+    pyb.delay(2000)  # respect the delays between measurement

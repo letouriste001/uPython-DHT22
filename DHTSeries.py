@@ -13,7 +13,8 @@ for use;
     AM2302.measure()
 
     for exemple in main.py
-
+    
+    import pyb
     import DHTSeries as AM2302
     AM2302.init()
     pyb.delay(3000)  # Time for stabilize the sensors
