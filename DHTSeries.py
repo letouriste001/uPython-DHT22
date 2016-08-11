@@ -1,13 +1,13 @@
 import pyb
-from pyb import Pin
 from pyb import ExtInt
+from pyb import Pin
 
 # We need to use global properties here as any allocation of a memory (aka declaration of a variable)
 # during the read cycle causes non-acceptable delay and we are loosing data than
 data = None
 timer = None
 micros = None
-dhttype = 0  # 0=DHT11 1=DHT21/DHT22
+dhttype = 0  # 0=DHT11 1=DHT21/DHT22/AM2302
 
 FALL_EDGES = 42  # we have 42 falling edges during data receive
 
@@ -36,16 +36,19 @@ def init(timer_id=2, data_pin='Y2', the_dhttype='DHT22'):
     else:
         dhttype = 1
 
+    # Configure the pid for data communication
+    data = Pin(data_pin)
+    # Save the ID of the timer we are going to use
+    timer = timer_id
+    # setup the 1uS timer
+    micros = pyb.Timer(timer, prescaler=83, period=0x3fffffff)  # 1MHz ~ 1uS
+    # Prepare interrupt handler
+    ExtInt(data, ExtInt.IRQ_FALLING, Pin.PULL_UP, None)
+    ExtInt(data, ExtInt.IRQ_FALLING, Pin.PULL_UP, edge)
 
-# Configure the pid for data communication
-data = Pin(data_pin)
-# Save the ID of the timer we are going to use
-timer = timer_id
-# setup the 1uS timer
-micros = pyb.Timer(timer, prescaler=83, period=0x3fffffff)  # 1MHz ~ 1uS
-# Prepare interrupt handler
-ExtInt(data, ExtInt.IRQ_FALLING, Pin.PULL_UP, None)
-ExtInt(data, ExtInt.IRQ_FALLING, Pin.PULL_UP, edge)
+    # Prepare start sequence
+    data.high()
+    pyb.delay(250)
 
 
 # Start signal
@@ -57,11 +60,11 @@ def do_measurement():
     data.init(Pin.OUT_PP)
     data.low()
     micros.counter(0)
-    while micros.counter() < 25000:
+    while micros.counter() < 20000:
         pass
     data.high()
     micros.counter(0)
-    while micros.counter() < 20:
+    while micros.counter() < 30:
         pass
     # Activate reading on the data pin
     index = 0
@@ -75,32 +78,31 @@ def process_data():
     global dhttype
     global times
 
+    i = 2  # We ignore the first two falling edges as it is a respomse on the start signal
+    result_i = 0
+    result = list([0, 0, 0, 0, 0])
+    while i < FALL_EDGES:
+        result[result_i] <<= 1
+        if times[i] - times[i - 1] > 100:
+            result[result_i] += 1
+        if (i % 8) == 1:
+            result_i += 1
+        i += 1
+    [int_rh, dec_rh, int_t, dec_t, csum] = result
 
-i = 2  # We ignore the first two falling edges as it is a respomse on the start signal
-result_i = 0
-result = list([0, 0, 0, 0, 0])
-while i < FALL_EDGES:
-    result[result_i] <<= 1
-    if times[i] - times[i - 1] > 100:
-        result[result_i] += 1
-    if (i % 8) == 1:
-        result_i += 1
-    i += 1
-[int_rh, dec_rh, int_t, dec_t, csum] = result
+    if dhttype == 0:  # dht11
+        humidity = int_rh  # dht11 20% ~ 90%
+        temperature = int_t  # dht11 0..50°C
+    else:  # dht21,dht22,AM2302
+        humidity = ((int_rh * 256) + dec_rh) / 10
+        temperature = (((int_t & 0x7F) * 256) + dec_t) / 10
+        if (int_t & 0x80) > 0:
+            temperature *= -1
 
-if dhttype == 0:  # dht11
-    humidity = int_rh  # dht11 20% ~ 90%
-    temperature = int_t  # dht11 0..50°C
-else:  # dht21,dht22
-    humidity = ((int_rh * 256) + dec_rh) / 10
-    temperature = (((int_t & 0x7F) * 256) + dec_t) / 10
-    if (int_t & 0x80) > 0:
-        temperature *= -1
-
-comp_sum = int_rh + dec_rh + int_t + dec_t
-if (comp_sum & 0xFF) != csum:
-    raise ValueError('Checksum does not match')
-return (humidity, temperature)
+    comp_sum = int_rh + dec_rh + int_t + dec_t
+    if (comp_sum & 0xFF) != csum:
+        raise ValueError('Checksum does not match')
+    return (humidity, temperature)
 
 
 def measure():
