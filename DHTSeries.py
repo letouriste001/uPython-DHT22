@@ -1,3 +1,28 @@
+"""Lib for DHT11, DHT21, DHT22 and AM2302
+
+for use;
+
+    import DHTSeries
+    DHTSeries.init()
+    DHTSeries.measure()
+
+    or
+
+    import DHTSeries as ###name_of_your_sensor : AM2302
+    AM2302.init()
+    AM2302.measure()
+
+    for exemple in main.py
+
+    import DHTSeries as AM2302
+    AM2302.init()
+    pyb.delay(3000)  # Time for stabilize the sensors
+
+    while True:
+        (hum, tem) = AM2302.measure()
+        print("humidité : " + str(hum) + " temperature : " + str(tem))
+        pyb.delay(2000)  # respect the delays between measurement
+"""
 import pyb
 from pyb import ExtInt
 from pyb import Pin
@@ -15,8 +40,12 @@ times = list(range(FALL_EDGES))
 index = 0
 
 
-# The interrupt handler
-def edge(line):
+def interuptHandler(line):
+    """
+    The interrupt handler
+    :param line:
+    :return:
+    """
     global index
     global times
     global micros
@@ -26,6 +55,12 @@ def edge(line):
 
 
 def init(timer_id=2, data_pin='Y2', the_dhttype='DHT22'):
+    """
+    Init the sensor
+    :param timer_id: id of the internal Timer in pyboard
+    :param data_pin: pin if you have connect the sensor
+    :param the_dhttype: type of used sensor
+    """
     global data
     global micros
     global timer
@@ -35,17 +70,20 @@ def init(timer_id=2, data_pin='Y2', the_dhttype='DHT22'):
         dhttype = 0
     else:
         dhttype = 1
-
+    
     # Configure the pid for data communication
     data = Pin(data_pin)
+    
     # Save the ID of the timer we are going to use
     timer = timer_id
+    
     # setup the 1uS timer
     micros = pyb.Timer(timer, prescaler=83, period=0x3fffffff)  # 1MHz ~ 1uS
+    
     # Prepare interrupt handler
     ExtInt(data, ExtInt.IRQ_FALLING, Pin.PULL_UP, None)
-    ExtInt(data, ExtInt.IRQ_FALLING, Pin.PULL_UP, edge)
-
+    ExtInt(data, ExtInt.IRQ_FALLING, Pin.PULL_UP, interuptHandler)
+    
     # Prepare start sequence
     data.high()
     pyb.delay(250)
@@ -53,9 +91,13 @@ def init(timer_id=2, data_pin='Y2', the_dhttype='DHT22'):
 
 # Start signal
 def do_measurement():
+    """
+    Init the sensor for receive data
+    """
     global data
     global micros
     global index
+    
     # Send the START signal
     data.init(Pin.OUT_PP)
     data.low()
@@ -66,6 +108,7 @@ def do_measurement():
     micros.counter(0)
     while micros.counter() < 30:
         pass
+    
     # Activate reading on the data pin
     index = 0
     data.init(Pin.IN, Pin.PULL_UP)
@@ -73,11 +116,14 @@ def do_measurement():
     pyb.delay(5)
 
 
-# Parse the data read from the sensor
 def process_data():
+    """
+    Parse the data read from the sensor
+    :return: value of humidity and temperature
+    """
     global dhttype
     global times
-
+    
     i = 2  # We ignore the first two falling edges as it is a respomse on the start signal
     result_i = 0
     result = list([0, 0, 0, 0, 0])
@@ -89,7 +135,7 @@ def process_data():
             result_i += 1
         i += 1
     [int_rh, dec_rh, int_t, dec_t, csum] = result
-
+    
     if dhttype == 0:  # dht11
         humidity = int_rh  # dht11 20% ~ 90%
         temperature = int_t  # dht11 0..50°C
@@ -98,7 +144,7 @@ def process_data():
         temperature = (((int_t & 0x7F) * 256) + dec_t) / 10
         if (int_t & 0x80) > 0:
             temperature *= -1
-
+    
     comp_sum = int_rh + dec_rh + int_t + dec_t
     if (comp_sum & 0xFF) != csum:
         raise ValueError('Checksum does not match')
@@ -110,8 +156,3 @@ def measure():
     if index != (FALL_EDGES - 1):
         raise ValueError('Data transfer failed: %s falling edges only' % str(index))
     return process_data()
-
-# using:
-# import DHT22
-# DHT22.init()
-# DHT22.measure()
