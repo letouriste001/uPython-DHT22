@@ -23,6 +23,7 @@ for use;
         print("humidité : " + str(hum) + " temperature : " + str(tem))
         pyb.delay(2000)  # respect the delays between measurement
 """
+
 import pyb
 from pyb import ExtInt
 from pyb import Pin
